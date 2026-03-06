@@ -7,6 +7,7 @@
   vars:
     kube_namespace: my-app
     kubeconfig_path: /home/ubuntu/.kube/config
+    namespace_manifest: namecpace.yaml
     backend_manifest: demo/k8s-deploy-backend.yaml
     mysql_manifest: demo/mysql-deploy.yaml
     frontend_manifest: frontend/frontend-deploy.yaml
