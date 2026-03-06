@@ -36,11 +36,32 @@ pipeline {
         }
 
         stage('Build Backend') {
-            steps {
-                dir('demo') {
-                    sh 'mvn clean package -DskipTests=true'
-                }
-            }
+    steps {
+            sh '''
+                echo "===== WHO AM I ====="
+                whoami
+                hostname
+                pwd
+
+                echo "===== JAVA ====="
+                echo "JAVA_HOME=$JAVA_HOME"
+                which java || true
+                which javac || true
+                which mvn || true
+                java -version
+                javac -version
+                mvn -version
+
+                echo "===== TOOLCHAINS / POM CHECK ====="
+                find ~/.m2 -name "toolchains.xml" 2>/dev/null || true
+                find . -name "toolchains.xml" 2>/dev/null || true
+                grep -R "<release>\\|<source>\\|<target>\\|jdkToolchain\\|maven-toolchain-plugin" . 2>/dev/null || true
+
+                echo "===== BUILD ====="
+                mvn -e -X clean compile
+            '''
+    }
+}
             post {
                 success {
                     emailext(
