@@ -117,7 +117,7 @@ pipeline {
             }
             post {
                 success {
-[3/6/2026 2:47 PM] Waad: emailext(
+                    emailext(
                         to: "${NOTIFY_EMAIL}",
                         subject: "SUCCESS: Build Frontend | ${env.JOB_NAME} #${env.BUILD_NUMBER}",
                         body: "Frontend build completed successfully.\n${env.BUILD_URL}"
@@ -213,7 +213,7 @@ pipeline {
         stage('Verification') {
             steps {
                 withKubeConfig(credentialsId: 'kubeconfig') {
-[3/6/2026 2:47 PM] Waad: sh 'kubectl get pods -n my-app'
+                  sh 'kubectl get pods -n my-app'
                     sh 'kubectl get svc -n my-app'
                     sh 'kubectl get ingress -n my-app'
                 }
