@@ -2,9 +2,9 @@ pipeline {
     agent any
 
     environment {
-        APP_NAME      = "fullstack-app"
-        NOTIFY_EMAIL  = "waad.majed777@gmail.com"
-        BACKEND_IMAGE = "waadi/backend-app:latest"
+        APP_NAME       = "fullstack-app"
+        NOTIFY_EMAIL   = "waad.majed777@gmail.com"
+        BACKEND_IMAGE  = "waadi/backend-app:latest"
         FRONTEND_IMAGE = "waadi/frontend-app:latest"
     }
 
@@ -35,53 +35,52 @@ pipeline {
             }
         }
 
-      stage('Build Backend') {
-          steps {
-            dir('demo') {
-              sh '''
-                export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64
-                export PATH=$JAVA_HOME/bin:$PATH
+        stage('Build Backend') {
+            steps {
+                dir('demo') {
+                    sh '''
+                        export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64
+                        export PATH=$JAVA_HOME/bin:$PATH
 
-                echo "===== JAVA ====="
-                java -version
-                javac -version
-                mvn -version
+                        echo "===== JAVA ====="
+                        echo "JAVA_HOME=$JAVA_HOME"
+                        java -version
+                        javac -version
+                        mvn -version
 
-                mvn clean compile
-            '''
+                        mvn clean compile
+                    '''
+                }
+            }
+            post {
+                success {
+                    emailext(
+                        to: "${NOTIFY_EMAIL}",
+                        subject: "SUCCESS: Build Backend | ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                        body: "Backend build completed successfully.\n${env.BUILD_URL}"
+                    )
+                }
+                failure {
+                    emailext(
+                        to: "${NOTIFY_EMAIL}",
+                        subject: "FAILED: Build Backend | ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                        body: "Backend build failed.\n${env.BUILD_URL}"
+                    )
+                }
+            }
         }
-    }
-}
-      
-    post {
-        success {
-            emailext(
-                to: "${NOTIFY_EMAIL}",
-                subject: "SUCCESS: Build Backend | ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-                body: "Backend build completed successfully.\n${env.BUILD_URL}"
-            )
-        }
-        failure {
-            emailext(
-                to: "${NOTIFY_EMAIL}",
-                subject: "FAILED: Build Backend | ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-                body: "Backend build failed.\n${env.BUILD_URL}"
-            )
-        }
-    }
-}
+
         stage('Test Backend') {
-    steps {
-        dir('demo') {
-            sh '''
-                export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64
-                export PATH=$JAVA_HOME/bin:$PATH
+            steps {
+                dir('demo') {
+                    sh '''
+                        export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64
+                        export PATH=$JAVA_HOME/bin:$PATH
 
-                mvn test
-            '''
-        }
-    }
-}
+                        mvn test
+                    '''
+                }
+            }
             post {
                 success {
                     emailext(
@@ -117,7 +116,7 @@ pipeline {
                 }
                 failure {
                     emailext(
-                        to: "${NOTIFY_EMAIL}",
+                       to: "${NOTIFY_EMAIL}",
                         subject: "FAILED: Clean Docker | ${env.JOB_NAME} #${env.BUILD_NUMBER}",
                         body: "Docker cleanup failed.\n${env.BUILD_URL}"
                     )
@@ -204,7 +203,7 @@ pipeline {
             }
         }
 
-stage('Deploy to Kubernetes with Ansible') {
+        stage('Deploy to Kubernetes with Ansible') {
             steps {
                 sh 'ansible-playbook -i inventory.ini playbook.yaml'
             }
@@ -251,6 +250,7 @@ stage('Deploy to Kubernetes with Ansible') {
                 }
             }
         }
+    }
 
     post {
         success {
@@ -271,3 +271,4 @@ stage('Deploy to Kubernetes with Ansible') {
             sh 'docker image prune -f || true'
         }
     }
+}
