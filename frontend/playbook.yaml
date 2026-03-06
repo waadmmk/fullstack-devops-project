@@ -5,25 +5,33 @@
   gather_facts: no
 
   vars:
-    kube_namespace: my-app
-    kubeconfig_path: /home/ubuntu/.kube/config
-    namespace_manifest: namecpace.yaml
-    backend_manifest: demo/k8s-deploy-backend.yaml
-    mysql_manifest: demo/mysql-deploy.yaml
-    frontend_manifest: frontend/frontend-deploy.yaml
-    ingress_manifest: ingress.yaml
+  kube_namespace: my-app
+  kubeconfig_path: /home/ubuntu/.kube/config
+  namespace_manifest: namespace.yaml
+  mysql_secret_manifest: demo/mysql-secret.yaml
+  mysql_pvc_manifest: mysql-pvc.yaml
+  backend_manifest: demo/k8s-deploy-backend.yaml
+  mysql_manifest: demo/mysql-deploy.yaml
+  frontend_manifest: frontend/frontend-deploy.yaml
+  ingress_manifest: ingress.yaml
     
-  tasks:
-    - name: Apply MySQL secret
-      command: kubectl apply -f demo/mysql-secret.yaml
-      environment:
-        KUBECONFIG: "{{ kubeconfig_path }}"
+   tasks:
 
     - name: Apply namespace
       command: kubectl apply -f {{ namespace_manifest }}
       environment:
         KUBECONFIG: "{{ kubeconfig_path }}"
-        
+
+    - name: Apply MySQL secret
+      command: kubectl apply -f {{ mysql_secret_manifest }}
+      environment:
+        KUBECONFIG: "{{ kubeconfig_path }}"
+
+    - name: Apply MySQL PVC
+      command: kubectl apply -f {{ mysql_pvc_manifest }}
+      environment:
+        KUBECONFIG: "{{ kubeconfig_path }}"
+
     - name: Apply MySQL deployment
       command: kubectl apply -f {{ mysql_manifest }}
       environment:
