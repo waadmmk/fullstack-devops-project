@@ -251,7 +251,6 @@ stage('Deploy to Kubernetes with Ansible') {
                 }
             }
         }
-    }
 
     post {
         success {
