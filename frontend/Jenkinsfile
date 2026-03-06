@@ -205,7 +205,7 @@ pipeline {
 
         stage('Deploy to Kubernetes with Ansible') {
             steps {
-                sh 'ansible-playbook -i inventory.ini playbook.yaml'
+                sh 'ansible-playbook -i inventory.ini frontend/playbook.yaml'
             }
             post {
                 success {
