@@ -35,8 +35,9 @@ pipeline {
             }
         }
 
-        stage('Build Backend') {
+       stage('Build Backend') {
     steps {
+        dir('backend') {
             sh '''
                 echo "===== WHO AM I ====="
                 whoami
@@ -60,26 +61,25 @@ pipeline {
                 echo "===== BUILD ====="
                 mvn -e -X clean compile
             '''
+        }
+    }
+    post {
+        success {
+            emailext(
+                to: "${NOTIFY_EMAIL}",
+                subject: "SUCCESS: Build Backend | ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                body: "Backend build completed successfully.\n${env.BUILD_URL}"
+            )
+        }
+        failure {
+            emailext(
+                to: "${NOTIFY_EMAIL}",
+                subject: "FAILED: Build Backend | ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                body: "Backend build failed.\n${env.BUILD_URL}"
+            )
+        }
     }
 }
-            post {
-                success {
-                    emailext(
-                        to: "${NOTIFY_EMAIL}",
-                        subject: "SUCCESS: Build Backend | ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-                        body: "Backend build completed successfully.\n${env.BUILD_URL}"
-                    )
-                }
-                failure {
-                    emailext(
-                        to: "${NOTIFY_EMAIL}",
-                        subject: "FAILED: Build Backend | ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-                        body: "Backend build failed.\n${env.BUILD_URL}"
-                    )
-                }
-            }
-        }
-
         stage('Test Backend') {
             steps {
                 dir('demo') {
