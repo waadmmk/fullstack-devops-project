@@ -179,7 +179,7 @@ pipeline {
         stage('Docker Build and Push Backend') {
             steps {
                 dir('demo') {
-                    withDockerRegistry(credentialsId: 'Dockerhub', url: 'https://index.docker.io/v1/') {
+                    withDockerRegistry(credentialsId: 'DockerHub', url: 'https://index.docker.io/v1/') {
                         sh 'docker build -t waadi/backend-app .'
                         sh 'docker push waadi/backend-app'
                     }
