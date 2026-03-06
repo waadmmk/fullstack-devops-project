@@ -189,8 +189,7 @@ pipeline {
 
         stage('Deploy to Kubernetes with Ansible') {
             steps {
-                    sh 'ansible-playbook -i inventory.ini playbook.yaml'
-                }
+                sh 'ansible-playbook -i inventory.ini playbook.yaml'
             }
             post {
                 success {
@@ -209,15 +208,15 @@ pipeline {
                 }
             }
         }
-
         stage('Verification') {
             steps {
                 withKubeConfig(credentialsId: 'kubeconfig') {
-                  sh 'kubectl get pods -n my-app'
+                    sh 'kubectl get pods -n my-app'
                     sh 'kubectl get svc -n my-app'
                     sh 'kubectl get ingress -n my-app'
                 }
             }
+        }
             post {
                 success {
                     emailext(
