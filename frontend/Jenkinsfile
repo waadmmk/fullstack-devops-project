@@ -35,18 +35,14 @@ pipeline {
             }
         }
 
-   stage('Build Backend') {
-    steps {
-        dir('backend') {
-            sh '''
+      stage('Build Backend') {
+          steps {
+            dir('demo') {
+              sh '''
                 export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64
                 export PATH=$JAVA_HOME/bin:$PATH
 
-                echo "===== JAVA_HOME ====="
-                echo $JAVA_HOME
-                which java
-                which javac
-                which mvn
+                echo "===== JAVA ====="
                 java -version
                 javac -version
                 mvn -version
@@ -56,6 +52,7 @@ pipeline {
         }
     }
 }
+      
     post {
         success {
             emailext(
@@ -74,11 +71,17 @@ pipeline {
     }
 }
         stage('Test Backend') {
-            steps {
-                dir('demo') {
-                    sh 'mvn test -DskipTests=true'
-                }
-            }
+    steps {
+        dir('demo') {
+            sh '''
+                export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64
+                export PATH=$JAVA_HOME/bin:$PATH
+
+                mvn test
+            '''
+        }
+    }
+}
             post {
                 success {
                     emailext(
