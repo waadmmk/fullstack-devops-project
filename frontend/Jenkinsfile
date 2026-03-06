@@ -187,7 +187,7 @@ pipeline {
             }
         }
 
-        stage('Deploy to Kubernetes with Ansible') {
+stage('Deploy to Kubernetes with Ansible') {
             steps {
                 sh 'ansible-playbook -i inventory.ini playbook.yaml'
             }
@@ -208,6 +208,7 @@ pipeline {
                 }
             }
         }
+
         stage('Verification') {
             steps {
                 withKubeConfig(credentialsId: 'kubeconfig') {
@@ -216,20 +217,19 @@ pipeline {
                     sh 'kubectl get ingress -n my-app'
                 }
             }
-        }
             post {
                 success {
                     emailext(
                         to: "${NOTIFY_EMAIL}",
                         subject: "SUCCESS: Verification | ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-                        body: "Verification stage completed successfully.\n${env.BUILD_URL}"
+                        body: "Verification completed successfully.\n${env.BUILD_URL}"
                     )
                 }
                 failure {
                     emailext(
                         to: "${NOTIFY_EMAIL}",
                         subject: "FAILED: Verification | ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-                        body: "Verification stage failed.\n${env.BUILD_URL}"
+                        body: "Verification failed.\n${env.BUILD_URL}"
                     )
                 }
             }
@@ -255,3 +255,4 @@ pipeline {
             sh 'docker image prune -f || true'
         }
     }
+}
