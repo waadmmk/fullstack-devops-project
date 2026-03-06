@@ -187,13 +187,9 @@
             }
         }
 
-        stage('Deploy to Kubernetes') {
+        stage('Deploy to Kubernetes with Ansible') {
             steps {
-                withKubeConfig(credentialsId: 'kubeconfig') {
-                    sh 'kubectl apply -f demo/mysql-deploy.yaml'
-                    sh 'kubectl apply -f demo/k8s-deploy-backend.yaml'
-                    sh 'kubectl apply -f frontend/frontend-deploy.yaml'
-                    sh 'kubectl apply -f ingress.yaml'
+                    sh 'ansible-playbook -i inventory.ini playbook.yaml'
                 }
             }
             post {
