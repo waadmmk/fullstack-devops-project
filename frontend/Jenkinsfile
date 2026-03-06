@@ -271,4 +271,3 @@ stage('Deploy to Kubernetes with Ansible') {
             sh 'docker image prune -f || true'
         }
     }
-}
