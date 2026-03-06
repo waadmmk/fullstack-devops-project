@@ -48,7 +48,7 @@ pipeline {
                         javac -version
                         mvn -version
 
-                        mvn clean compile
+                        mvn clean package -DskipTests
                     '''
                 }
             }
