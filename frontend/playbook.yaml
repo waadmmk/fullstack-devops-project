@@ -1,0 +1,79 @@
+---
+- name: Deploy Fullstack App to Kubernetes
+  hosts: k8s_master
+  become: false
+  gather_facts: no
+
+  vars:
+    kube_namespace: my-app
+    kubeconfig_path: /home/ubuntu/.kube/config
+    backend_manifest: demo/k8s-deploy-backend.yaml
+    mysql_manifest: demo/mysql-deploy.yaml
+    frontend_manifest: frontend/frontend-deploy.yaml
+    ingress_manifest: ingress.yaml
+
+  tasks:
+    - name: Apply MySQL deployment
+      command: kubectl apply -f {{ mysql_manifest }}
+      environment:
+        KUBECONFIG: "{{ kubeconfig_path }}"
+
+    - name: Wait for MySQL rollout
+      command: kubectl rollout status deployment/mysql -n {{ kube_namespace }} --timeout=120s
+      environment:
+        KUBECONFIG: "{{ kubeconfig_path }}"
+
+    - name: Apply Backend deployment
+      command: kubectl apply -f {{ backend_manifest }}
+      environment:
+        KUBECONFIG: "{{ kubeconfig_path }}"
+
+    - name: Wait for Backend rollout
+      command: kubectl rollout status deployment/backend -n {{ kube_namespace }} --timeout=120s
+      environment:
+        KUBECONFIG: "{{ kubeconfig_path }}"
+
+    - name: Apply Frontend deployment
+      command: kubectl apply -f {{ frontend_manifest }}
+      environment:
+        KUBECONFIG: "{{ kubeconfig_path }}"
+
+    - name: Wait for Frontend rollout
+      command: kubectl rollout status deployment/frontend -n {{ kube_namespace }} --timeout=120s
+      environment:
+        KUBECONFIG: "{{ kubeconfig_path }}"
+
+    - name: Apply Ingress
+      command: kubectl apply -f {{ ingress_manifest }}
+      environment:
+        KUBECONFIG: "{{ kubeconfig_path }}"
+
+    - name: Get running pods
+      command: kubectl get pods -n {{ kube_namespace }}
+      environment:
+        KUBECONFIG: "{{ kubeconfig_path }}"
+      register: pods_output
+
+    - name: Show pods
+      debug:
+        var: pods_output.stdout_lines
+
+    - name: Get services
+      command: kubectl get svc -n {{ kube_namespace }}
+      environment:
+        KUBECONFIG: "{{ kubeconfig_path }}"
+      register: svc_output
+
+    - name: Show services
+      debug:
+        var: svc_output.stdout_lines
+
+    - name: Get ingress
+      command: kubectl get ingress -n {{ kube_namespace }}
+      environment:
+        KUBECONFIG: "{{ kubeconfig_path }}"
+      register: ingress_output
+
+    - name: Show ingress
+      debug:
+        var: ingress_output.stdout_lines
