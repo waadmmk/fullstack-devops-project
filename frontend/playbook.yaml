@@ -13,6 +13,11 @@
     ingress_manifest: ingress.yaml
 
   tasks:
+    - name: Apply MySQL secret
+      command: kubectl apply -f demo/mysql-secret.yaml
+      environment:
+        KUBECONFIG: "{{ kubeconfig_path }}"
+        
     - name: Apply MySQL deployment
       command: kubectl apply -f {{ mysql_manifest }}
       environment:
