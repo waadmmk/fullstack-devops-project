@@ -35,34 +35,27 @@ pipeline {
             }
         }
 
-       stage('Build Backend') {
+   stage('Build Backend') {
     steps {
         dir('backend') {
             sh '''
-                echo "===== WHO AM I ====="
-                whoami
-                hostname
-                pwd
+                export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64
+                export PATH=$JAVA_HOME/bin:$PATH
 
-                echo "===== JAVA ====="
-                echo "JAVA_HOME=$JAVA_HOME"
-                which java || true
-                which javac || true
-                which mvn || true
+                echo "===== JAVA_HOME ====="
+                echo $JAVA_HOME
+                which java
+                which javac
+                which mvn
                 java -version
                 javac -version
                 mvn -version
 
-                echo "===== TOOLCHAINS / POM CHECK ====="
-                find ~/.m2 -name "toolchains.xml" 2>/dev/null || true
-                find . -name "toolchains.xml" 2>/dev/null || true
-                grep -R "<release>\\|<source>\\|<target>\\|jdkToolchain\\|maven-toolchain-plugin" . 2>/dev/null || true
-
-                echo "===== BUILD ====="
-                mvn -e -X clean compile
+                mvn clean compile
             '''
         }
     }
+}
     post {
         success {
             emailext(
