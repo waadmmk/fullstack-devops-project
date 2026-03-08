@@ -189,7 +189,7 @@ stage('Nexus Upload') {
            passwordVariable: 'DOCKERHUB_PASS'
          )]) {
             sh '''
-                ansible-playbook ansible/playbook-docker.yml -e "workspace=$WORKSPACE tag=$BUILD_NUMBER"
+                ansible-playbook ansible/docker-playbook.yaml -e "workspace=$WORKSPACE tag=$BUILD_NUMBER"
               '''
              }
            }
