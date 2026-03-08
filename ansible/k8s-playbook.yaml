@@ -1,0 +1,156 @@
+[3/8/2026 11:47 AM] Waad: ---
+- name: Deploy Fullstack Project on Kubernetes
+  hosts: k8s_master
+  become: true
+  gather_facts: false
+
+  vars:
+    kubeconfig_path: "/home/ubuntu/.kube/config"
+    repo_root: "{{ playbook_dir | dirname }}"
+    k8s_dir: "/home/ubuntu/fullstack-devops-project/k8s"
+    ns: "my-app"
+
+  tasks:
+    - name: Copy k8s folder to master
+      copy:
+        src: "{{ repo_root }}/k8s/"
+        dest: "{{ k8s_dir }}/"
+        owner: ubuntu
+        group: ubuntu
+        mode: "0644"
+
+    # 1) Namespace
+    - name: Apply namespace
+      command: kubectl apply -f {{ k8s_dir }}/namespace.yaml
+      environment:
+        KUBECONFIG: "{{ kubeconfig_path }}"
+
+    # 2) Secret
+    - name: Apply MySQL secret
+      command: kubectl apply -f {{ k8s_dir }}/mysql-secret.yaml -n {{ ns }}
+      environment:
+        KUBECONFIG: "{{ kubeconfig_path }}"
+
+    # 3) PV/PVC
+    - name: Apply PV then PVC
+      command: kubectl apply -f {{ k8s_dir }}/{{ item }}
+      loop:
+        - mysql-pv.yaml
+        - mysql-pvc.yaml
+      environment:
+        KUBECONFIG: "{{ kubeconfig_path }}"
+
+    # 4) MySQL
+    - name: Apply MySQL deployment and service
+      command: kubectl apply -f {{ k8s_dir }}/mysql-deployment.yaml -n {{ ns }}
+      environment:
+        KUBECONFIG: "{{ kubeconfig_path }}"
+
+    - name: Wait for MySQL rollout
+      command: kubectl rollout status deployment/mysql -n {{ ns }} --timeout=120s
+      environment:
+        KUBECONFIG: "{{ kubeconfig_path }}"
+
+    # 5) Backend
+    - name: Check backend deployment exists
+      command: kubectl get deployment backend -n {{ ns }}
+      register: be_dep
+      failed_when: false
+      changed_when: false
+      environment:
+        KUBECONFIG: "{{ kubeconfig_path }}"
+
+    - name: Delete backend resources only if exists
+      command: kubectl delete -f {{ k8s_dir }}/backend.yaml -n {{ ns }}
+      when: be_dep.rc == 0
+      environment:
+        KUBECONFIG: "{{ kubeconfig_path }}"
+
+    - name: Apply backend resources
+      command: kubectl apply -f {{ k8s_dir }}/backend.yaml -n {{ ns }}
+      environment:
+        KUBECONFIG: "{{ kubeconfig_path }}"
+
+    - name: Wait for backend rollout
+      command: kubectl rollout status deployment/backend -n {{ ns }} --timeout=120s
+      environment:
+        KUBECONFIG: "{{ kubeconfig_path }}"
+
+    # 6) Frontend
+    - name: Check frontend deployment exists
+      command: kubectl get deployment frontend -n {{ ns }}
+      register: fe_dep
+      failed_when: false
+      changed_when: false
+      environment:
+        KUBECONFIG: "{{ kubeconfig_path }}"
+
+    - name: Delete frontend resources only if exists
+      command: kubectl delete -f {{ k8s_dir }}/frontend.yaml -n {{ ns }}
+      when: fe_dep.rc == 0
+      environment:
+        KUBECONFIG: "{{ kubeconfig_path }}"
+
+    - name: Apply frontend resources
+      command: kubectl apply -f {{ k8s_dir }}/frontend.yaml -n {{ ns }}
+      environment:
+        KUBECONFIG: "{{ kubeconfig_path }}"
+
+    - name: Wait for frontend rollout
+      command: kubectl rollout status deployment/frontend -n {{ ns }} --timeout=120s
+      environment:
+        KUBECONFIG: "{{ kubeconfig_path }}"
+
+    # 7) Ingress
+    - name: Check ingress exists
+      command: kubectl get ingress my-app-ingress -n {{ ns }}
+      register: ing
+      failed_when: false
+      changed_when: false
+      environment:
+        KUBECONFIG: "{{ kubeconfig_path }}"
+
+    - name: Delete ingress only if exists
+      command: kubectl delete -f {{ k8s_dir }}/ingress.yaml -n {{ ns }}
+      when: ing.rc == 0
+      environment:
+        KUBECONFIG: "{{ kubeconfig_path }}"
+
+    - name: Apply ingress
+      command: kubectl apply -f {{ k8s_dir }}/ingress.yaml -n {{ ns }}
+      environment:
+        KUBECONFIG: "{{ kubeconfig_path }}"
+
+    # 8) Verify
+    - name: Show pods
+      command: kubectl get pods -n {{ ns }}
+      register: pods_out
+      changed_when: false
+      environment:
+        KUBECONFIG: "{{ kubeconfig_path }}"
+
+    - name: Print pods
+      debug:
+        var: pods_out.stdout_lines
+
+    - name: Show services
+      command: kubectl get svc -n {{ ns }}
+      register: svc_out
+[3/8/2026 11:47 AM] Waad: changed_when: false
+      environment:
+        KUBECONFIG: "{{ kubeconfig_path }}"
+
+    - name: Print services
+      debug:
+        var: svc_out.stdout_lines
+
+    - name: Show ingress
+      command: kubectl get ingress -n {{ ns }}
+      register: ing_out
+      changed_when: false
+      environment:
+        KUBECONFIG: "{{ kubeconfig_path }}"
+
+    - name: Print ingress
+      debug:
+        var: ing_out.stdout_lines
