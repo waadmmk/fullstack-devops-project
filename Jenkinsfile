@@ -210,7 +210,6 @@ pipeline {
         success { notifyStage('PIPELINE', 'SUCCESS') }
         failure { notifyStage('PIPELINE', 'FAILURE') }
     }
-}
 
 def notifyStage(String stageName, String status) {
     emailext(
