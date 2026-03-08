@@ -37,7 +37,7 @@
 
     # 4) MySQL
     - name: Apply MySQL deployment and service
-      command: kubectl apply -f {{ k8s_dir }}/mysql-deployment.yaml -n {{ ns }}
+      command: kubectl apply -f {{ k8s_dir }}/mysql-deploy.yaml -n {{ ns }}
       environment:
         KUBECONFIG: "{{ kubeconfig_path }}"
 
