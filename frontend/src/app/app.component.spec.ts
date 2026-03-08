@@ -2,7 +2,6 @@ import { TestBed } from '@angular/core/testing';
 import { HttpClientTestingModule } from '@angular/common/http/testing';
 import { FormsModule } from '@angular/forms';
 import { RouterTestingModule } from '@angular/router/testing';
-
 import { AppComponent } from './app.component';
 
 describe('AppComponent', () => {
@@ -13,7 +12,7 @@ describe('AppComponent', () => {
         FormsModule,
         RouterTestingModule
       ],
-      declarations: [AppComponent],
+      declarations: [AppComponent]
     }).compileComponents();
   });
 
@@ -30,8 +29,9 @@ describe('AppComponent', () => {
   });
 
   it('should render title', () => {
-  const fixture = TestBed.createComponent(AppComponent);
-  fixture.detectChanges();
-  const compiled = fixture.nativeElement as HTMLElement;
-  expect(compiled.textContent).toContain('frontend');
+    const fixture = TestBed.createComponent(AppComponent);
+    fixture.detectChanges();
+    const compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.textContent).toContain('frontend');
+  });
 });
