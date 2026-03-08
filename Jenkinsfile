@@ -1,4 +1,4 @@
-[3/8/2026 12:27 PM] Waad: pipeline {
+pipeline {
     agent any
 
     environment {
@@ -124,7 +124,7 @@
                                 [
                                     artifactId: 'demo',
                                     classifier: '',
-[3/8/2026 12:27 PM] Waad: file: 'target/demo-0.0.1-SNAPSHOT.jar',
+                                'target/demo-0.0.1-SNAPSHOT.jar',
                                     type: 'jar'
                                 ]
                             ],
