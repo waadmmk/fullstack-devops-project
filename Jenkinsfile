@@ -120,49 +120,50 @@ pipeline {
                 stage('Upload Backend') {
                     steps {
                         dir('demo') {
-                            nexusArtifactUploader artifacts: [
-                                [
+                            nexusArtifactUploader(
+                                artifacts: [[
                                     artifactId: 'demo',
                                     classifier: '',
-                                    file: 'target/demo-0.0.1-SNAPSHOT.jar'
+                                    file: 'target/demo-0.0.1-SNAPSHOT.jar',
                                     type: 'jar'
-                                ]
-                            ],
-                            credentialsId: 'nexus',
-                            groupId: 'com.example',
-                            nexusUrl: '51.44.221.92:8081',
-                            nexusVersion: 'nexus3',
-                            protocol: 'http',
-                            repository: 'fullstack-backend',
-                            version: "0.0.1-${BUILD_NUMBER}"
+                                ]],
+                                credentialsId: 'nexus',
+                                groupId: 'com.example',
+                                nexusUrl: '51.44.221.92:8081',
+                                nexusVersion: 'nexus3',
+                                protocol: 'http',
+                                repository: 'fullstack-backend',
+                                version: "0.0.1-${BUILD_NUMBER}"
+                            )
                         }
                     }
-                    post {
-                        success { notifyStage('Upload Backend', 'SUCCESS') }
-                        failure { notifyStage('Upload Backend', 'FAILURE') }
-                    }
                 }
+                post {
+                    success { notifyStage('Upload Backend', 'SUCCESS') }
+                    failure { notifyStage('Upload Backend', 'FAILURE') }
+                }
+            }
 
                 stage('Upload Frontend') {
                     steps {
                         dir('frontend') {
                             sh "tar -czf frontend-${BUILD_NUMBER}.tgz dist"
 
-                            nexusArtifactUploader artifacts: [
-                                [
+                            nexusArtifactUploader(
+                                artifacts: [[
                                     artifactId: 'frontend',
                                     classifier: '',
                                     file: "frontend-${BUILD_NUMBER}.tgz",
                                     type: 'tgz'
-                                ]
-                            ],
+                                ]],
                             credentialsId: 'nexus',
                             groupId: 'com.example',
-                            nexusUrl: '15.188.28.246:8081',
+                            nexusUrl: '51.44.221.92:8081',
                             nexusVersion: 'nexus3',
                             protocol: 'http',
                             repository: 'fullstack-frontend',
                             version: "0.0.1-${BUILD_NUMBER}"
+                            )
                         }
                     }
                     post {
