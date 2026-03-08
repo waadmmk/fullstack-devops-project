@@ -9,7 +9,7 @@ spec:
   - host: myfullstackproject.local
     http:
       paths:
-      - path: /costumers
+      - path: /customers
         pathType: Prefix
         backend:
           service:
