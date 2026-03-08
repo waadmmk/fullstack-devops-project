@@ -7,7 +7,7 @@
   vars:
     kubeconfig_path: "/home/ubuntu/.kube/config"
     repo_root: "{{ playbook_dir | dirname }}"
-    k8s_dir: "/home/ubuntu/fullstack-devops-project/k8s"
+    k8s_dir: "/home/ubuntu/k8s"
     ns: "my-app"
 
   tasks:
