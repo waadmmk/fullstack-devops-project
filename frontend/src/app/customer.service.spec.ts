@@ -1,7 +1,8 @@
 import { TestBed } from '@angular/core/testing';
-import { HttpClientTestingModule } from '@angular/common/http/testing';
 
 import { CustomerService } from './customer.service';
+
+import { HttpClientTestingModule } from '@angular/common/http/testing';
 
 describe('CustomerService', () => {
   let service: CustomerService;
@@ -11,6 +12,7 @@ describe('CustomerService', () => {
       imports: [HttpClientTestingModule]
     });
     service = TestBed.inject(CustomerService);
+
   });
 
   it('should be created', () => {
