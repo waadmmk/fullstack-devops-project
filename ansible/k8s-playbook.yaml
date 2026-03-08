@@ -1,4 +1,4 @@
-[3/8/2026 11:47 AM] Waad: ---
+---
 - name: Deploy Fullstack Project on Kubernetes
   hosts: k8s_master
   become: true
@@ -136,7 +136,7 @@
     - name: Show services
       command: kubectl get svc -n {{ ns }}
       register: svc_out
-[3/8/2026 11:47 AM] Waad: changed_when: false
+      changed_when: false
       environment:
         KUBECONFIG: "{{ kubeconfig_path }}"
 
