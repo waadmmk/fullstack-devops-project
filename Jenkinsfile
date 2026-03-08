@@ -142,7 +142,6 @@ pipeline {
                     success { notifyStage('Upload Backend', 'SUCCESS') }
                     failure { notifyStage('Upload Backend', 'FAILURE') }
                 }
-            }
 
                 stage('Upload Frontend') {
                     steps {
@@ -173,6 +172,7 @@ pipeline {
                 }
             }
         }
+    }
 
         stage('Docker Build & Push') {
             steps {
