@@ -1,0 +1,39 @@
+---
+- name: Build and Push Docker Images (Backend & Frontend)
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    workspace: "{{ workspace | default(lookup('env','WORKSPACE')) }}"
+    tag: "{{ tag | default(lookup('env','BUILD_NUMBER')) }}"
+
+  tasks:
+
+    - name: Docker Login
+      shell: |
+        echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USER" --password-stdin
+      no_log: true
+
+    - name: Build Backend Image (tag + latest)
+      shell: |
+        docker build \
+        -t waadi/backend-app:{{ tag }} \
+        -t waadi/backend-app:latest \
+        {{ workspace }}/demo
+
+    - name: Push Backend Image
+      shell: |
+        docker push waadi/backend-app:{{ tag }}
+        docker push waadi/backend-app:latest
+
+    - name: Build Frontend Image (tag + latest)
+      shell: |
+        docker build \
+        -t waadi/frontend-app:{{ tag }} \
+        -t waadi/frontend-app:latest \
+        {{ workspace }}/frontend
+
+    - name: Push Frontend Image
+      shell: |
+        docker push waadi/frontend-app:{{ tag }}
+        docker push waadi/frontend-app:latest
