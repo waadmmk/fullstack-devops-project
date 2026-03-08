@@ -61,7 +61,7 @@ pipeline {
     stage('Test Frontend') {
       steps {
         dir('frontend') {
-          sh 'CHROME_BIN=/usr/bin/chromium-browser xvfb-run -a npx ng test --watch=false --browsers=ChromeHeadless'
+          sh 'CHROME_BIN=/usr/bin/google-chrome xvfb-run -a npx ng test --watch=false --browsers=ChromeHeadless'
         }
       }
                   post {
