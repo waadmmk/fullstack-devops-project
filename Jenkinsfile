@@ -124,7 +124,7 @@ pipeline {
                                 [
                                     artifactId: 'demo',
                                     classifier: '',
-                                'target/demo-0.0.1-SNAPSHOT.jar',
+                                    file: 'target/demo-0.0.1-SNAPSHOT.jar'
                                     type: 'jar'
                                 ]
                             ],
