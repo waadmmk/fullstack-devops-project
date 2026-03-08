@@ -1,274 +1,228 @@
-pipeline {
+[3/8/2026 12:27 PM] Waad: pipeline {
     agent any
 
     environment {
-        APP_NAME       = "fullstack-app"
-        NOTIFY_EMAIL   = "waad.majed777@gmail.com"
-        BACKEND_IMAGE  = "waadi/backend-app:latest"
-        FRONTEND_IMAGE = "waadi/frontend-app:latest"
+        EMAIL_TO = "waad.majed777@gmail.com"
     }
 
     stages {
 
-        stage('Checkout') {
-            steps {
-                git branch: 'main',
-                    credentialsId: 'git',
-                    url: 'git@github.com:waadmmk/fullstack-devops-project.git'
-                sh 'ls -lah'
-            }
-            post {
-                success {
-                    emailext(
-                        to: "${NOTIFY_EMAIL}",
-                        subject: "SUCCESS: Checkout | ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-                        body: "Checkout stage completed successfully.\n${env.BUILD_URL}"
-                    )
-                }
-                failure {
-                    emailext(
-                        to: "${NOTIFY_EMAIL}",
-                        subject: "FAILED: Checkout | ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-                        body: "Checkout stage failed.\n${env.BUILD_URL}"
-                    )
-                }
-            }
-        }
-
         stage('Build Backend') {
             steps {
                 dir('demo') {
-                    sh '''
-                        export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64
-                        export PATH=$JAVA_HOME/bin:$PATH
-
-                        echo "===== JAVA ====="
-                        echo "JAVA_HOME=$JAVA_HOME"
-                        java -version
-                        javac -version
-                        mvn -version
-
-                        mvn clean package -DskipTests
-                    '''
+                    sh 'mvn clean package -DskipTests=true'
                 }
             }
             post {
-                success {
-                    emailext(
-                        to: "${NOTIFY_EMAIL}",
-                        subject: "SUCCESS: Build Backend | ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-                        body: "Backend build completed successfully.\n${env.BUILD_URL}"
-                    )
-                }
-                failure {
-                    emailext(
-                        to: "${NOTIFY_EMAIL}",
-                        subject: "FAILED: Build Backend | ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-                        body: "Backend build failed.\n${env.BUILD_URL}"
-                    )
-                }
+                success { notifyStage('Build Backend', 'SUCCESS') }
+                failure { notifyStage('Build Backend', 'FAILURE') }
             }
         }
 
         stage('Test Backend') {
+            environment {
+                SPRING_PROFILES_ACTIVE = 'test-no-db'
+            }
             steps {
                 dir('demo') {
-                    sh '''
-                        export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64
-                        export PATH=$JAVA_HOME/bin:$PATH
-
-                        mvn test
-                    '''
+                    sh 'mvn test'
                 }
             }
             post {
-                success {
-                    emailext(
-                        to: "${NOTIFY_EMAIL}",
-                        subject: "SUCCESS: Test Backend | ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-                        body: "Backend test stage completed successfully.\n${env.BUILD_URL}"
-                    )
-                }
-                failure {
-                    emailext(
-                        to: "${NOTIFY_EMAIL}",
-                        subject: "FAILED: Test Backend | ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-                        body: "Backend test stage failed.\n${env.BUILD_URL}"
-                    )
-                }
+                success { notifyStage('Test Backend', 'SUCCESS') }
+                failure { notifyStage('Test Backend', 'FAILURE') }
             }
         }
 
-        stage('Clean Old Docker Images') {
+        stage('Install Frontend') {
             steps {
-                sh '''
-                    docker image prune -af || true
-                    docker builder prune -af || true
-                '''
+                dir('frontend') {
+                    sh 'npm ci'
+                }
             }
             post {
-                success {
-                    emailext(
-                        to: "${NOTIFY_EMAIL}",
-                        subject: "SUCCESS: Clean Docker | ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-                        body: "Docker cleanup completed successfully.\n${env.BUILD_URL}"
-                    )
-                }
-                failure {
-                    emailext(
-                       to: "${NOTIFY_EMAIL}",
-                        subject: "FAILED: Clean Docker | ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-                        body: "Docker cleanup failed.\n${env.BUILD_URL}"
-                    )
-                }
+                success { notifyStage('Install Frontend', 'SUCCESS') }
+                failure { notifyStage('Install Frontend', 'FAILURE') }
             }
         }
 
         stage('Build Frontend') {
             steps {
                 dir('frontend') {
-                    sh 'npm install'
-                    sh 'npm run build -- --configuration production'
+                    sh 'npm run build'
                 }
             }
             post {
-                success {
-                    emailext(
-                        to: "${NOTIFY_EMAIL}",
-                        subject: "SUCCESS: Build Frontend | ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-                        body: "Frontend build completed successfully.\n${env.BUILD_URL}"
-                    )
-                }
-                failure {
-                    emailext(
-                        to: "${NOTIFY_EMAIL}",
-                        subject: "FAILED: Build Frontend | ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-                        body: "Frontend build failed.\n${env.BUILD_URL}"
-                    )
-                }
+                success { notifyStage('Build Frontend', 'SUCCESS') }
+                failure { notifyStage('Build Frontend', 'FAILURE') }
             }
         }
 
-        stage('Docker Build and Push Frontend') {
+        stage('Test Frontend') {
             steps {
                 dir('frontend') {
-                    withDockerRegistry(credentialsId: 'DockerHub', url: 'https://index.docker.io/v1/') {
-                        sh 'docker build -t waadi/frontend-app .'
-                        sh 'docker push waadi/frontend-app'
+                    sh 'xvfb-run -a npx ng test --watch=false --browsers=ChromeHeadless'
+                }
+            }
+            post {
+                success { notifyStage('Test Frontend', 'SUCCESS') }
+                failure { notifyStage('Test Frontend', 'FAILURE') }
+            }
+        }
+
+        stage('SonarQube') {
+            parallel {
+
+                stage('Sonar Backend') {
+                    steps {
+                        dir('demo') {
+                            withSonarQubeEnv('sonarqube') {
+                                sh '''
+                                    mvn -DskipTests clean verify \
+                                    org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
+                                    -Dsonar.projectKey=fullstack-backend
+                                '''
+                            }
+                        }
+                    }
+                    post {
+                        success { notifyStage('Sonar Backend', 'SUCCESS') }
+                        failure { notifyStage('Sonar Backend', 'FAILURE') }
+                    }
+                }
+
+                stage('Sonar Frontend') {
+                    steps {
+                        dir('frontend') {
+                            withSonarQubeEnv('sonarqube') {
+                                script {
+                                    def scannerHome = tool 'sonar-scanner'
+                                    sh """
+                                        ${scannerHome}/bin/sonar-scanner \
+                                        -Dsonar.projectKey=fullstack-frontend \
+                                        -Dsonar.sources=src
+                                    """
+                                }
+                            }
+                        }
+                    }
+                    post {
+                        success { notifyStage('Sonar Frontend', 'SUCCESS') }
+                        failure { notifyStage('Sonar Frontend', 'FAILURE') }
                     }
                 }
             }
-            post {
-                success {
-                    emailext(
-                        to: "${NOTIFY_EMAIL}",
-                        subject: "SUCCESS: Docker Frontend | ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-                        body: "Frontend Docker image built and pushed successfully.\n${env.BUILD_URL}"
-                    )
-                }
-                failure {
-                    emailext(
-                        to: "${NOTIFY_EMAIL}",
-                        subject: "FAILED: Docker Frontend | ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-                        body: "Frontend Docker stage failed.\n${env.BUILD_URL}"
-                    )
-                }
-            }
         }
 
-        stage('Docker Build and Push Backend') {
-            steps {
-                dir('demo') {
-                    withDockerRegistry(credentialsId: 'DockerHub', url: 'https://index.docker.io/v1/') {
-                        sh 'docker build -t waadi/backend-app .'
-                        sh 'docker push waadi/backend-app'
+        stage('Upload to Nexus') {
+            parallel {
+
+                stage('Upload Backend') {
+                    steps {
+                        dir('demo') {
+                            nexusArtifactUploader artifacts: [
+                                [
+                                    artifactId: 'demo',
+                                    classifier: '',
+[3/8/2026 12:27 PM] Waad: file: 'target/demo-0.0.1-SNAPSHOT.jar',
+                                    type: 'jar'
+                                ]
+                            ],
+                            credentialsId: 'nexus',
+                            groupId: 'com.example',
+                            nexusUrl: '51.44.221.92:8081',
+                            nexusVersion: 'nexus3',
+                            protocol: 'http',
+                            repository: 'fullstack-backend',
+                            version: "0.0.1-${BUILD_NUMBER}"
+                        }
+                    }
+                    post {
+                        success { notifyStage('Upload Backend', 'SUCCESS') }
+                        failure { notifyStage('Upload Backend', 'FAILURE') }
+                    }
+                }
+
+                stage('Upload Frontend') {
+                    steps {
+                        dir('frontend') {
+                            sh "tar -czf frontend-${BUILD_NUMBER}.tgz dist"
+
+                            nexusArtifactUploader artifacts: [
+                                [
+                                    artifactId: 'frontend',
+                                    classifier: '',
+                                    file: "frontend-${BUILD_NUMBER}.tgz",
+                                    type: 'tgz'
+                                ]
+                            ],
+                            credentialsId: 'nexus',
+                            groupId: 'com.example',
+                            nexusUrl: '15.188.28.246:8081',
+                            nexusVersion: 'nexus3',
+                            protocol: 'http',
+                            repository: 'fullstack-frontend',
+                            version: "0.0.1-${BUILD_NUMBER}"
+                        }
+                    }
+                    post {
+                        success { notifyStage('Upload Frontend', 'SUCCESS') }
+                        failure { notifyStage('Upload Frontend', 'FAILURE') }
                     }
                 }
             }
+        }
+
+        stage('Docker Build & Push') {
+            steps {
+                withCredentials([usernamePassword(
+                    credentialsId: 'DockerHub',
+                    usernameVariable: 'DOCKERHUB_USER',
+                    passwordVariable: 'DOCKERHUB_PASS'
+                )]) {
+                    sh '''
+                        ansible-playbook ansible/docker-playbook.yaml \
+                        -e "workspace=$WORKSPACE tag=$BUILD_NUMBER"
+                    '''
+                }
+            }
             post {
-                success {
-                    emailext(
-                        to: "${NOTIFY_EMAIL}",
-                        subject: "SUCCESS: Docker Backend | ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-                        body: "Backend Docker image built and pushed successfully.\n${env.BUILD_URL}"
-                    )
-                }
-                failure {
-                    emailext(
-                        to: "${NOTIFY_EMAIL}",
-                        subject: "FAILED: Docker Backend | ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-                        body: "Backend Docker stage failed.\n${env.BUILD_URL}"
-                    )
-                }
+                success { notifyStage('Docker Build & Push', 'SUCCESS') }
+                failure { notifyStage('Docker Build & Push', 'FAILURE') }
             }
         }
 
-        stage('Deploy to Kubernetes with Ansible') {
+        stage('Deploy to Kubernetes') {
             steps {
-                sh 'ansible-playbook -i inventory.ini frontend/playbook.yaml'
-            }
-            post {
-                success {
-                    emailext(
-                        to: "${NOTIFY_EMAIL}",
-                        subject: "SUCCESS: Kubernetes Deploy | ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-                        body: "Kubernetes deployment completed successfully.\n${env.BUILD_URL}"
-                    )
-                }
-                failure {
-                    emailext(
-                        to: "${NOTIFY_EMAIL}",
-                        subject: "FAILED: Kubernetes Deploy | ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-                        body: "Kubernetes deployment failed.\n${env.BUILD_URL}"
-                    )
-                }
-            }
-        }
-
-        stage('Verification') {
-            steps {
-                withKubeConfig(credentialsId: 'kubeconfig') {
-                    sh 'kubectl get pods -n my-app'
-                    sh 'kubectl get svc -n my-app'
-                    sh 'kubectl get ingress -n my-app'
+                dir('ansible') {
+                    sh 'ansible-playbook -i inventory.ini playbook-k8s.yaml'
                 }
             }
             post {
-                success {
-                    emailext(
-                        to: "${NOTIFY_EMAIL}",
-                        subject: "SUCCESS: Verification | ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-                        body: "Verification completed successfully.\n${env.BUILD_URL}"
-                    )
-                }
-                failure {
-                    emailext(
-                        to: "${NOTIFY_EMAIL}",
-                        subject: "FAILED: Verification | ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-                        body: "Verification failed.\n${env.BUILD_URL}"
-                    )
-                }
+                success { notifyStage('Deploy to Kubernetes', 'SUCCESS') }
+                failure { notifyStage('Deploy to Kubernetes', 'FAILURE') }
             }
         }
     }
 
     post {
-        success {
-            emailext(
-                to: "${NOTIFY_EMAIL}",
-                subject: "SUCCESS: Pipeline | ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-                body: "The full pipeline completed successfully.\n${env.BUILD_URL}"
-            )
-        }
-        failure {
-            emailext(
-                to: "${NOTIFY_EMAIL}",
-                subject: "FAILED: Pipeline | ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-                body: "The full pipeline failed.\n${env.BUILD_URL}"
-            )
-        }
-        always {
-            sh 'docker image prune -f || true'
-        }
+        success { notifyStage('PIPELINE', 'SUCCESS') }
+        failure { notifyStage('PIPELINE', 'FAILURE') }
     }
+}
+
+def notifyStage(String stageName, String status) {
+    emailext(
+        to: env.EMAIL_TO,
+        subject: "[Jenkins] ${env.JOB_NAME} #${env.BUILD_NUMBER} | ${stageName} | ${status}",
+        mimeType: 'text/html',
+        body: """
+            <h3>Pipeline Notification</h3>
+            <p><b>Job:</b> ${env.JOB_NAME}</p>
+            <p><b>Build:</b> ${env.BUILD_NUMBER}</p>
+            <p><b>Stage:</b> ${stageName}</p>
+            <p><b>Status:</b> ${status}</p>
+            <p><b>Build URL:</b> <a href="${env.BUILD_URL}">${env.BUILD_URL}</a></p>
+        """
+    )
 }
