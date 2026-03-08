@@ -25,11 +25,6 @@
       environment:
         KUBECONFIG: "{{ kubeconfig_path }}"
 
-    # 2) Secret
-    - name: Apply MySQL secret
-      command: kubectl apply -f {{ k8s_dir }}/mysql-secret.yaml -n {{ ns }}
-      environment:
-        KUBECONFIG: "{{ kubeconfig_path }}"
 
     # 3) PV/PVC
     - name: Apply PV then PVC
